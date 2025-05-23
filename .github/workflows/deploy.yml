@@ -51,6 +51,7 @@ jobs:
           script: |
             # Install git if not already installed
             sudo yum install -y git
+            sudo yum install -y docker
 
             # Clone public repo (no auth required)
             cd ~
