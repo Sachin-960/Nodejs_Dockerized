@@ -1,4 +1,4 @@
-name: Deploy Docker Image Without Pushing (Local Build + SCP)
+name: Deploy Docker Image Without Pushing 
 
 on:
   push:
