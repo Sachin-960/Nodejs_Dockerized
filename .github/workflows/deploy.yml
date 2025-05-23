@@ -39,6 +39,9 @@ jobs:
         run: |
           echo "Server IP: ${{ env.IP }}"
 
+      - name: wait for 150 seconds to make server boot
+        run: sleep 150
+
       - name: Clone Repo + Build & Deploy on Server
         uses: appleboy/ssh-action@master
         with:
