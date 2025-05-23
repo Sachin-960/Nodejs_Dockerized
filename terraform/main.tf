@@ -37,7 +37,7 @@ resource "aws_security_group" "node_app_sg" {
 }
 
 resource "aws_instance" "node_app_server" {
-  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2
+  ami           = "ami-0953476d60561c955" # Amazon Linux 
   instance_type = "t2.micro"
 
   key_name          = var.key_pair_name
