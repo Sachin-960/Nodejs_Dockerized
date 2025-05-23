@@ -29,7 +29,6 @@ jobs:
             -var "region=${{ secrets.AWS_REGION }}" \
             -var "aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var "aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var "private_key_path=~/.ssh/id_rsa" \
             -var "key_pair_name=${{ secrets.AWS_KEY_PAIR_NAME }}"
           echo "IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
 
@@ -57,14 +56,9 @@ jobs:
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Stop and remove existing container if exists
             docker stop node-app || true
             docker rm node-app || true
-
-            # Load image from tar
             docker load -i ~/nodejs-app.tar
-
-            # Run new container with environment variables
             docker run -d -p 3000:3000 \
               -e SECRET_MESSAGE=${{ secrets.APP_SECRET_MESSAGE }} \
               -e USERNAME=${{ secrets.APP_USERNAME }} \

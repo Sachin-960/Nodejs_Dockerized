@@ -1,7 +1,6 @@
 variable "region" {}
 variable "aws_access_key" {}
 variable "aws_secret_key" {}
-variable "private_key_path" {}
 variable "key_pair_name" {}
 
 provider "aws" {
@@ -10,7 +9,16 @@ provider "aws" {
   secret_key = var.aws_secret_key
 }
 
-resource "aws_security_group" "node_app_sg" {
+# Try to fetch existing security group
+data "aws_security_group" "existing_sg" {
+  name = "node-app-sg"
+  # Optional: filter by VPC or tags if needed
+}
+
+# Create SG only if it doesn't exist
+resource "aws_security_group" "new_sg" {
+  count = length(data.aws_security_group.existing_sg.id) == 0 ? 1 : 0
+
   name        = "node-app-sg"
   description = "Allow SSH and HTTP for Node.js app"
 
@@ -36,32 +44,20 @@ resource "aws_security_group" "node_app_sg" {
   }
 }
 
+# Local value to reference correct SG
+locals {
+  sg_id = length(data.aws_security_group.existing_sg.id) > 0 ? data.aws_security_group.existing_sg.id : aws_security_group.new_sg[0].id
+}
+
 resource "aws_instance" "node_app_server" {
-  ami           = "ami-0953476d60561c955" # Amazon Linux 
+  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2
   instance_type = "t2.micro"
 
   key_name          = var.key_pair_name
-  vpc_security_group_ids = [aws_security_group.node_app_sg.id]
+  vpc_security_group_ids = [local.sg_id]
 
   tags = {
     Name = "NodeAppServer"
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ec2-user"
-    private_key = file(var.private_key_path)
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo yum update -y",
-      "sudo yum install -y docker git",
-      "sudo service docker start",
-      "sudo usermod -aG docker ec2-user",
-      "sudo chkconfig docker on"
-    ]
   }
 }
 
