@@ -13,8 +13,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set Up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Set Up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init
+
+      - name: Terraform Apply
+        id: tf_apply
+        run: |
+          cd terraform
+          terraform apply -auto-approve \
+            -var "region=${{ secrets.AWS_REGION }}" \
+            -var "aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var "aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -var "private_key_path=~/.ssh/id_rsa" \
+            -var "key_pair_name=${{ secrets.AWS_KEY_PAIR_NAME }}"
+          echo "IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
 
       - name: Build Docker Image
         run: |
@@ -27,7 +44,7 @@ jobs:
       - name: Transfer Image to Server via SCP
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.SERVER_IP }}
+          host: ${{ env.IP }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "nodejs-app.tar"
@@ -36,7 +53,7 @@ jobs:
       - name: Load and Run Docker Image on Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SERVER_IP }}
+          host: ${{ env.IP }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           env:
@@ -44,14 +61,9 @@ jobs:
             USERNAME: ${{ secrets.APP_USERNAME }}
             PASSWORD: ${{ secrets.APP_PASSWORD }}
           script: |
-            # Stop and remove existing container if exists
             docker stop node-app || true
             docker rm node-app || true
-
-            # Load image from tar
             docker load -i ~/nodejs-app.tar
-
-            # Run new container with environment variables
             docker run -d -p 3000:3000 \
               -e SECRET_MESSAGE=$SECRET_MESSAGE \
               -e USERNAME=$USERNAME \
