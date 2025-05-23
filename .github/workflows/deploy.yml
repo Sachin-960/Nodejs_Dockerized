@@ -79,3 +79,8 @@ jobs:
               -e "PASSWORD=${{ secrets.APP_PASSWORD }}" \
               --name node-app nodejs-app
             EOF
+
+      - name: Show App URLs
+        run: |
+          echo "✅ Public URL: http://${{ env.IP }}:3000/"
+          echo "🔒 Secret URL: http://${{ env.IP }}:3000/secret"
