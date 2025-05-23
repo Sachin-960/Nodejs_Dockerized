@@ -42,6 +42,9 @@ jobs:
         run: |
           docker save -o nodejs-app.tar nodejs-app
 
+      - name: Wait for Instance Boot (3 minutes)
+        run: sleep 180
+        
       - name: Transfer Image to Server via SCP
         uses: appleboy/scp-action@master
         with:
