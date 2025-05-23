@@ -53,8 +53,13 @@ jobs:
             sudo yum install -y git
             sudo yum install -y docker
             sudo service docker start || sudo systemctl start docker
+            
+            # Add user to Docker group (first time only)
+            sudo usermod -aG docker ec2-user
 
-            # Clone public repo 
+            # Re-login or re-source to apply group changes
+            newgrp docker <<EOF
+            # Clone repo
             cd ~
             rm -rf nodejs-app || true
             git clone https://github.com/Sachin-960/Nodejs_Dockerized  nodejs-app
@@ -65,11 +70,12 @@ jobs:
             # Build Docker image
             docker build -t nodejs-app .
 
-            # Run Docker container with injected secrets
+            # Run Docker container
             docker stop node-app || true
             docker rm node-app || true
             docker run -d -p 3000:3000 \
-              -e SECRET_MESSAGE=${{ secrets.APP_SECRET_MESSAGE }} \
-              -e USERNAME=${{ secrets.APP_USERNAME }} \
-              -e PASSWORD=${{ secrets.APP_PASSWORD }} \
+              -e "SECRET_MESSAGE=${{ secrets.APP_SECRET_MESSAGE }}" \
+              -e "USERNAME=${{ secrets.APP_USERNAME }}" \
+              -e "PASSWORD=${{ secrets.APP_PASSWORD }}" \
               --name node-app nodejs-app
+            EOF
