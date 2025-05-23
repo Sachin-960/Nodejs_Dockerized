@@ -1,4 +1,4 @@
-name: Deploy Docker Image Without Pushing 
+name: Deploy Docker Image Without Pushing (Local Build + SCP)
 
 on:
   push:
@@ -56,16 +56,17 @@ jobs:
           host: ${{ env.IP }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          env:
-            SECRET_MESSAGE: ${{ secrets.APP_SECRET_MESSAGE }}
-            USERNAME: ${{ secrets.APP_USERNAME }}
-            PASSWORD: ${{ secrets.APP_PASSWORD }}
           script: |
+            # Stop and remove existing container if exists
             docker stop node-app || true
             docker rm node-app || true
+
+            # Load image from tar
             docker load -i ~/nodejs-app.tar
+
+            # Run new container with environment variables
             docker run -d -p 3000:3000 \
-              -e SECRET_MESSAGE=$SECRET_MESSAGE \
-              -e USERNAME=$USERNAME \
-              -e PASSWORD=$PASSWORD \
+              -e SECRET_MESSAGE=${{ secrets.APP_SECRET_MESSAGE }} \
+              -e USERNAME=${{ secrets.APP_USERNAME }} \
+              -e PASSWORD=${{ secrets.APP_PASSWORD }} \
               --name node-app nodejs-app
