@@ -1,0 +1,13 @@
+{
+  "name": "nodejs-docker-secret",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "basic-auth": "^2.0.1",
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,59 @@
+name: Deploy Docker Image Without Pushing (Local Build + SCP)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker Image
+        run: |
+          docker build -t nodejs-app .
+
+      - name: Export Docker Image
+        run: |
+          docker save -o nodejs-app.tar nodejs-app
+
+      - name: Transfer Image to Server via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "nodejs-app.tar"
+          target: "~/"
+
+      - name: Load and Run Docker Image on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          env:
+            SECRET_MESSAGE: ${{ secrets.APP_SECRET_MESSAGE }}
+            USERNAME: ${{ secrets.APP_USERNAME }}
+            PASSWORD: ${{ secrets.APP_PASSWORD }}
+          script: |
+            # Stop and remove existing container if exists
+            docker stop node-app || true
+            docker rm node-app || true
+
+            # Load image from tar
+            docker load -i ~/nodejs-app.tar
+
+            # Run new container with environment variables
+            docker run -d -p 3000:3000 \
+              -e SECRET_MESSAGE=$SECRET_MESSAGE \
+              -e USERNAME=$USERNAME \
+              -e PASSWORD=$PASSWORD \
+              --name node-app nodejs-app
